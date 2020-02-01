@@ -1,14 +1,14 @@
 const MongoClient = require('mongodb').MongoClient;
 const util = require('util')
-const url = '';
+const url = process.argv[2] || '';
 const fs = require('fs');
 // const Readable = require('stream').Readable;
 // const JSONStream = require('JSONStream')
 const localUrl = 'mongodb://127.0.0.1:27017/';
 function main(url, localUrl) {
-	const name = process.argv[2] || '';
-	const collectionName = process.argv[3] || '';
-	const limit= parseInt(process.argv[4], 10) || 100;
+	const name = process.argv[3] || '';
+	const collectionName = process.argv[4] || '';
+	const limit= parseInt(process.argv[5], 10) || 100;
 	const write = fs.createWriteStream(process.cwd() + '/data.txt');
 	MongoClient.connect(localUrl, {useUnifiedTopology: true}, (lerr, lClient)=> {
 		if(lerr) console.log(lerr)
