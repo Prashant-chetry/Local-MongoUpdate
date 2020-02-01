@@ -1,0 +1,15 @@
+{
+  "name": "mongoupdatescript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "prashantChetry",
+  "license": "ISC",
+  "dependencies": {
+    "JSONStream": "^1.3.5",
+    "mongodb": "^3.5.2"
+  }
+}
