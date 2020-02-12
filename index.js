@@ -30,8 +30,8 @@ function main(url, localUrl) {
 					const createdAt = new Date(`1-${new Date().getMonth() - 1}-${new Date().getFullYear()}`);
 					if (options === 'json') {
 						//using stream
-						const filter = {source: 'HDFC', createdAt: {$gte: new Date('12 feb 2020')}};
-						const docStream = collection.find({...filter}, {limit}).stream();
+						// const filter = {};
+						const docStream = collection.find({}, {limit}).stream();
 						docStream.pipe(JSONStream.stringify()).pipe(write);
 						docStream.on('end', ()=> {
 							client.close();
