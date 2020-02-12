@@ -15,8 +15,9 @@ const sleepFun = function(timeout){
 function main(url, localUrl) {
 	const name = process.argv[3] || '';
 	const collectionName = process.argv[4] || '';
-	const limit = parseInt(process.argv[6], 10) || 100;
+	const limit = parseInt(process.argv[6], 10) || 1000;
 	const options = process.argv[5] || 'local';
+	const saveJson = process.argv[7] === 'true' ? true : false;
 	const write = fs.createWriteStream(path);
 		MongoClient.connect(localUrl, {useUnifiedTopology: true}, (lerr, lClient)=> {
 			if (lerr) console.log(lerr);
@@ -35,35 +36,14 @@ function main(url, localUrl) {
 						docStream.pipe(JSONStream.stringify()).pipe(write);
 						docStream.on('end', ()=> {
 							client.close();
-							let arrayInput = [];
-							const read = fs.createReadStream('./data.json');
-							read.pipe(JSONStream.parse('*')).on('data', async(data)=> {
-								const doc = await lCollection.findOne({_id: data._id});
-								if (!doc) {
-									arrayInput.push(data);
-									if (arrayInput.length === 20) {
-										read.pause();
-										try {
-											const ids = await lCollection.insertMany([...arrayInput]);
-											console.log(ids.insertedIds);
-											arrayInput = [];
-											await sleepFun(0.5);
-											read.resume();
-										}
-										catch (err) {
-											console.error('error in data insert', err);
-											lClient.close()
-											;
-										}
-									}
-								}
-							}).on('end', ()=> {
-								console.log('complete');
-								lClient.close();
-								fs.unlinkSync(path);
-							}).on('error', error=> {
-								console.log(error)
-							})
+							lClient.close();
+							const exec = require('child_process').exec;
+							exec(`mongoimport --db ${name} --collection ${collectionName} --file ${path} --jsonArray`, (error, stdout, stderr)=> {
+								if(error) console.error(error);
+								if(stdout) console.log(stdout);
+								if(stderr) console.log(stderr);
+								if(!saveJson) fs.unlinkSync(path);
+							});
 						});
 					}
 					else {
@@ -92,4 +72,5 @@ main(url, localUrl);
 // in collection-name replace it with collection name of live mongo 
 ///if 'json' the script will create a file and use that file for data insertion using stream else directly insert in mongodb using loop
 // limit replace it with 1000 or any number of your desire
-//node index.js url db-name collection-name 'json' limit
+// saveJson replace it will 'true' for kiping the json file else replace it will 'false'
+//node index.js url db-name collection-name 'json' limit saveJSon
