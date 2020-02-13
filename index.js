@@ -18,25 +18,32 @@ const readline = require('readline').createInterface({
 });
 const questionPrompt = (question, options)=> new Promise((resolve, reject)=> {
 	readline.question(question + '\n', (value)=> {
-		if (typeof options === 'string') {
-			if (options === 'number') {
-				if (typeof parseInt(value, 10) !== options) reject(`input must be ${options}`);
+		switch(typeof options){
+			case 'string': {
+				if(options === 'string'){
+					if(/[0-9]/.test(value)) return reject(`input must be ${options}`);
+					return resolve(value.toLowerCase());
+				}
+				else if(options === 'number'){
+					if(/[A-Za-z]/.test(value)) return  reject(`input must be ${options}`);
+					 return resolve(value.toLowerCase());
+				}
 			}
-			else {
-				if (typeof value !== options) reject(`input must be ${options}`);
+			case 'object': {
+				if(Array.isArray(options)){
+				if(!(options || []).includes(value.toLowerCase())) return reject(`input must be ${options}`);
+				return resolve(value.toLowerCase());
+				}
 			}
+			default: return reject('not valid');
 		}
-		else if (typeof options === 'array') {
-			if (!options.find(i=> i === value)) reject(`input must be ${options}`);
-		}
-		resolve(value);
 	});
 });
 async function main(url, localUrl) {
 	try{
-			const name = await questionPrompt('Database name', 'string');
+	const name = await questionPrompt('Database name', 'string');
 	const collectionName = await questionPrompt('Collection name', 'string');
-	// const filters = await questionPrompt('filters for collection', 'object');
+	// const filters = await questionPrompt('filters for collection', 's');
 	const limit = await questionPrompt('data limit in number', 'number');
 	const options = await questionPrompt('options available for mongo operation [json/local]', ['json', 'local']);
 	const saveJson = await questionPrompt('save the json file [yes/no]', ['yes', 'no']);
@@ -51,25 +58,25 @@ async function main(url, localUrl) {
 				const createdAt = new Date(`1-${new Date().getMonth() - 1}-${new Date().getFullYear()}`);
 				//using stream
 				// const filter = {};
-				const docStream = collection.find({}, {limit}).stream();
+				const docStream = collection.find({}, {limit: parseInt(limit, 10)}).stream();
 				docStream.pipe(JSONStream.stringify()).pipe(write);
 				docStream.on('end', ()=> {
 					client.close();
-					lClient.close();
 					const exec = require('child_process').exec;
 					exec(`mongoimport --db ${name} --collection ${collectionName} --file ${path} --jsonArray`, (error, stdout, stderr)=> {
 						if (error) console.error(error);
 						if (stdout) console.log(stdout);
 						if (stderr) console.log(stderr);
-						if (!saveJson) fs.unlinkSync(path);
+						if (saveJson === 'no') fs.unlinkSync(path);
 					});
-					if(csv.toLowerCase() !== 'yes') return;
+					if(csv.toLowerCase() === 'yes') return;
+					readline.close();
+					return;
 				});
 			}
 			catch (err) {
 				console.log(err);
-				// lClient.close();
-				// client.close();
+				client.close();
 			}
 		});
 	}
@@ -95,12 +102,14 @@ async function main(url, localUrl) {
 			catch (err) {
 				console.log(err);
 				// lClient.close();
-				// client.close();
 			}
 		});
 	});
 	}
-}catch(err){console.loge(err)}
+}catch(err){
+	console.log(err);
+	readline.close();
+	return;}
 }
 main(url, localUrl);
 
